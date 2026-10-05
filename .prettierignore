@@ -1,0 +1,6 @@
+.next
+node_modules
+out
+build
+docs/build-output.txt
+package-lock.json
