@@ -1,0 +1,11 @@
+import { Skeleton } from "@/components/Skeleton/Skeleton";
+import styles from "./loading.module.css";
+
+export default function DashboardLoading() {
+  return (
+    <div className={styles.loading}>
+      <Skeleton lines={2} />
+      <Skeleton lines={8} />
+    </div>
+  );
+}

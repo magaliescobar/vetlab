@@ -46,12 +46,14 @@
   /* ===== Layout & z-index ===== */
   --container-max: 1120px;
   --z-modal: 1000; --z-toast: 1100;
+  --z-sticky: 100;
 
   /* ===== Motion ===== */
   --transition-fast: 120ms ease;
   --transition-base: 200ms ease;
 
   /* ===== Extensiones VetLab (agregadas, no se tocan las de arriba) ===== */
+  --color-on-primary:   #ffffff;
   --color-success-soft: #e3f4ea;
   --color-warning-soft: #fdf2d9;
   --color-danger-soft:  #fbe7e7;
@@ -62,6 +64,7 @@
   --fw-medium:   500;
   --fw-semibold: 600;
   --fw-bold:     700;
+  --shimmer-speed: 1.4s;
 }
 
 [data-theme="dark"] {

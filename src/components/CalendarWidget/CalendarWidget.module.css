@@ -1,0 +1,53 @@
+.calendarRoot {
+  min-height: var(--calendar-min-height);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/*
+ * Willow define sus --wx-* sobre .wx-willow-theme: hay que apuntar a ese
+ * mismo elemento porque un override en un ancestro no gana la cascada.
+ * Todo se mapea a tokens del proyecto (excepción SVAR documentada en README).
+ */
+.calendarRoot :global(.wx-willow-theme) {
+  --wx-color-primary: var(--color-primary-500);
+  --wx-color-primary-font: var(--color-on-primary);
+  --wx-color-primary-selected: var(--color-primary-50);
+  --wx-color-font: var(--color-text);
+  --wx-color-font-alt: var(--color-text-soft);
+  --wx-background: var(--color-surface);
+  --wx-background-alt: var(--color-bg);
+  --wx-background-hover: var(--color-primary-50);
+  --wx-border: var(--border-width) solid var(--color-border);
+  --wx-border-color: var(--color-border);
+  --wx-border-radius: var(--radius-md);
+  --wx-font-family: var(--font-sans);
+  --wx-calendar-grid-color: var(--color-border);
+  --wx-calendar-weekend-background: var(--color-bg);
+  height: 100%;
+}
+
+/* Color por estado sobre las clases globales del widget. */
+.estadoPendiente:global(.wx-box-event),
+.estadoPendiente:global(.wx-bar-event) {
+  background-color: var(--color-warning);
+}
+
+.estadoConfirmada:global(.wx-box-event),
+.estadoConfirmada:global(.wx-bar-event) {
+  background-color: var(--color-info);
+}
+
+.estadoCompletada:global(.wx-box-event),
+.estadoCompletada:global(.wx-bar-event) {
+  background-color: var(--color-success);
+}
+
+.estadoCancelada:global(.wx-box-event),
+.estadoCancelada:global(.wx-bar-event) {
+  background-color: var(--color-text-mute);
+  text-decoration: line-through;
+}

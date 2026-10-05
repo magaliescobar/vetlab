@@ -1,0 +1,36 @@
+.row td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+  vertical-align: middle;
+}
+
+.row:last-child td {
+  border-bottom: none;
+}
+
+.hora {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+
+.principal {
+  display: block;
+  font-weight: var(--fw-medium);
+}
+
+.secundario {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--color-text-mute);
+}
+
+.link {
+  color: var(--color-primary-600);
+  text-decoration: none;
+  font-weight: var(--fw-medium);
+}
+
+.link:hover {
+  text-decoration: underline;
+}

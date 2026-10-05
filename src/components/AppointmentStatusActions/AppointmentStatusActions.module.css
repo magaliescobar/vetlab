@@ -1,0 +1,23 @@
+.estadoCell {
+  white-space: nowrap;
+}
+
+.error {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-xs);
+  color: var(--color-danger);
+}
+
+.actionsCell {
+  text-align: right;
+}
+
+.actions {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.cancel {
+  color: var(--color-danger);
+}

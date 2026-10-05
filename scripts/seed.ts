@@ -79,14 +79,14 @@ const VETS: Omit<Vet, "_id">[] = [
     nombre: "Dra. Lucía Fernández",
     especialidad: "Medicina general",
     bio: "Clínica médica de pequeños animales. Diez años de experiencia en atención primaria.",
-    fotoUrl: "/vets/lucia.png",
+    fotoUrl: "/vets/lucia.svg",
     horarios: HORARIOS_LUCIA,
   },
   {
     nombre: "Dr. Martín Pereira",
     especialidad: "Cirugía",
     bio: "Cirujano de tejidos blandos. Referente interno para procedimientos menores.",
-    fotoUrl: "/vets/martin.png",
+    fotoUrl: "/vets/martin.svg",
     horarios: HORARIOS_MARTIN,
   },
   {

@@ -1,0 +1,28 @@
+.header {
+  margin-bottom: var(--space-5);
+}
+
+.nombre {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-xl);
+  line-height: var(--lh-tight);
+}
+
+.datos {
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.datos dt {
+  font-size: var(--fs-xs);
+  color: var(--color-text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.datos dd {
+  margin: 0;
+  font-size: var(--fs-sm);
+}

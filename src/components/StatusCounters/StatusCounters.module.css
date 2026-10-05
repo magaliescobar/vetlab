@@ -1,0 +1,43 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.counter {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.counter > span:first-child {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+}
+
+.label {
+  font-size: var(--fs-xs);
+  color: var(--color-text-soft);
+}
+
+.pendiente {
+  color: var(--color-warning);
+}
+.confirmada {
+  color: var(--color-info);
+}
+.completada {
+  color: var(--color-success);
+}
+.cancelada {
+  color: var(--color-danger);
+}
+.total {
+  color: var(--color-text);
+}

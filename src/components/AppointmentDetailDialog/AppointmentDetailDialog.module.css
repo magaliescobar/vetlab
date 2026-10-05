@@ -1,0 +1,33 @@
+.detalle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.datos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.datos dt {
+  font-size: var(--fs-xs);
+  color: var(--color-text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.datos dd {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-top: var(--border-width) solid var(--color-border);
+  padding-top: var(--space-4);
+}

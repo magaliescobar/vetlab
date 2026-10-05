@@ -8,10 +8,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <main>
+    <section>
       <h1>Algo salió mal</h1>
       <p>{error.message || "Error inesperado."}</p>
       <button onClick={reset}>Reintentar</button>
-    </main>
+    </section>
   );
 }

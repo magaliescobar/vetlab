@@ -1,4 +1,5 @@
 import { CLINIC_TZ } from "./config";
+import { localToUtc } from "./availability";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -16,6 +17,13 @@ export function toWallClock(utc: Date, tz: string = CLINIC_TZ): Date {
 /** Date "de pared" → "YYYY-MM-DDTHH:mm" (formato de NewAppointmentInput.fechaHora). */
 export function toLocalIso(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Inverso de toWallClock: Date "de pared" → instante UTC real. */
+export function wallClockToUtc(d: Date, tz: string = CLINIC_TZ): Date {
+  const iso = toLocalIso(d);
+  const [date, time] = iso.split("T");
+  return localToUtc(date, time, tz);
 }
 
 /** Fecha de hoy "YYYY-MM-DD" en la zona de la clínica. */
