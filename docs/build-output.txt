@@ -1,0 +1,39 @@
+
+> vetlab@0.1.0 build
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+- Environments: .env.local
+⚠ Warning: Next.js ignored pnpm-lock.yaml in /home/devmaga/Pyxis because it is outside the current Git repository (/home/devmaga/Pyxis/vetlab).
+ To use this directory, set `turbopack.root` in your Next.js config.
+
+✓ Running next.config.ts took 16ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 128ms
+  Running TypeScript ...
+  Finished TypeScript in 965ms ...
+  Collecting page data using 13 workers ...
+  Generating static pages using 13 workers (0/7) ...
+  Generating static pages using 13 workers (1/7) 
+  Generating static pages using 13 workers (3/7) 
+  Generating static pages using 13 workers (5/7) 
+✓ Generating static pages using 13 workers (7/7) in 523ms
+  Finalizing page optimization ...
+
+Route (app)              Revalidate  Expire
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /agenda
+├ ƒ /api/citas
+├ ƒ /api/disponibilidad
+├ ƒ /api/revalidate
+├ ƒ /dashboard
+├ ƒ /duenos
+├ ƒ /duenos/[id]
+└ ○ /veterinarios                1h      1y
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
