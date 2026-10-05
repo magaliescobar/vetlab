@@ -1,6 +1,13 @@
 "use client";
 
-import { startTransition, useActionState, useOptimistic } from "react";
+import {
+  startTransition,
+  useActionState,
+  useContext,
+  useEffect,
+  useOptimistic,
+} from "react";
+import { QueryClientContext } from "@tanstack/react-query";
 import { updateAppointmentEstado } from "@/actions/citas";
 import type { EstadoCita } from "@/lib/models/shared";
 import type { FormState } from "@/lib/types/forms";
@@ -25,10 +32,21 @@ export function AppointmentStatusActions({
 }) {
   const [formState, dispatch] = useActionState<FormState, FormData>(
     updateAppointmentEstado,
-    { ok: true },
+    { ok: false },
   );
   const [optimisticEstado, setOptimisticEstado] = useOptimistic(estado);
   const Cell = inTable ? "td" : "div";
+
+  // En /agenda el componente vive bajo QueryClientProvider: invalidar el feed
+  // del calendario y los slots tras un cambio exitoso. En /dashboard no hay
+  // provider (la revalidación la hace revalidatePath en el server).
+  const queryClient = useContext(QueryClientContext);
+  useEffect(() => {
+    if (formState.ok) {
+      queryClient?.invalidateQueries({ queryKey: ["citas"] });
+      queryClient?.invalidateQueries({ queryKey: ["slots"] });
+    }
+  }, [formState, queryClient]);
 
   function submit(formData: FormData) {
     const next = formData.get("estado") as EstadoCita;
