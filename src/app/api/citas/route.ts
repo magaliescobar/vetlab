@@ -4,8 +4,6 @@ import { ObjectId } from "mongodb";
 import { getAppointmentsInRange } from "@/lib/data/appointments";
 import { objectIdString } from "@/lib/validation/appointment";
 
-export const dynamic = "force-dynamic";
-
 const querySchema = z.object({
   from: z.iso.datetime({ offset: true }).or(z.iso.datetime()),
   to: z.iso.datetime({ offset: true }).or(z.iso.datetime()),

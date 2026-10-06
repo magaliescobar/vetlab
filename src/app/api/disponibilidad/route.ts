@@ -7,8 +7,6 @@ import { getSlots } from "@/lib/data/availability";
 import { DEFAULT_SLOT_MIN } from "@/lib/config";
 import { objectIdString } from "@/lib/validation/appointment";
 
-export const dynamic = "force-dynamic";
-
 const querySchema = z.object({
   vetId: objectIdString,
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
@@ -30,11 +28,13 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Buscar el veterinario
   const vet = await getVetById(new ObjectId(parsed.data.vetId));
   if (!vet) {
     return Response.json({ error: "Veterinario no encontrado" }, { status: 404 });
   }
 
+  // Si no se especifica serviceId, usar el valor por defecto
   let durationMin = DEFAULT_SLOT_MIN;
   if (parsed.data.serviceId) {
     const service = await getServiceById(new ObjectId(parsed.data.serviceId));

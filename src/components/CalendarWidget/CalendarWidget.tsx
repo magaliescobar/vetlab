@@ -54,19 +54,40 @@ export function CalendarWidget({
   onDateChange: (dateISO: string) => void;
   onSelect: (cita: CitaView) => void;
 }) {
-  // Rango visible del calendario en UTC (el widget trabaja en "wall clock").
-  const [range, setRange] = useState<{ from: string; to: string } | null>(null);
+  // Fecha inicial en "wall clock" (memoizada: props de fecha/vista son
+  // reactivos por identidad; una Date nueva por render resetearía la vista).
+  const initialDate = useMemo(() => toWallClock(new Date()), []);
+
+  // Rango visible en UTC, inicializado con la semana de initialDate:
+  // la emisión inicial de request-data puede ocurrir antes de que api.on
+  // registre el handler (carrera) y sin semilla la agenda cargaría vacía.
+  const [range, setRange] = useState(() => {
+    const from = new Date(initialDate);
+    from.setDate(from.getDate() - ((from.getDay() + 6) % 7));
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 7);
+    return {
+      from: wallClockToUtc(from).toISOString(),
+      to: wallClockToUtc(to).toISOString(),
+    };
+  });
   const onDateChangeRef = useRef(onDateChange);
   const onSelectRef = useRef(onSelect);
   useEffect(() => {
     onDateChangeRef.current = onDateChange;
     onSelectRef.current = onSelect;
   });
+  // Sincroniza el SlotPicker con la fecha inicial (request-data ya lo hace
+  // en las navegaciones siguientes).
+  useEffect(() => {
+    onDateChangeRef.current(toLocalIso(initialDate).slice(0, 10));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const citasQuery = useQuery({
-    queryKey: ["citas", range?.from, range?.to],
-    queryFn: () => fetchCitas(range!.from, range!.to),
-    enabled: range !== null,
+    queryKey: ["citas", range.from, range.to],
+    queryFn: () => fetchCitas(range.from, range.to),
     placeholderData: (prev) => prev,
   });
 
@@ -87,10 +108,6 @@ export function CalendarWidget({
       onDateChangeRef.current(toLocalIso(ev.date).slice(0, 10));
     });
   }, []);
-
-  // Fecha inicial en "wall clock" (memoizada: props de fecha/vista son
-  // reactivos por identidad; una Date nueva por render resetearía la vista).
-  const initialDate = useMemo(() => toWallClock(new Date()), []);
 
   const events = useMemo(
     () =>

@@ -1,15 +1,18 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { DashboardFilters } from "@/components/DashboardFilters/DashboardFilters";
 import { StatusCounters } from "@/components/StatusCounters/StatusCounters";
 import { AppointmentTable } from "@/components/AppointmentTable/AppointmentTable";
+import { Skeleton } from "@/components/Skeleton/Skeleton";
 import { getAppointmentsByDate } from "@/lib/data/appointments";
 import { todayISO } from "@/lib/datetime";
 import type { EstadoCita } from "@/lib/models/shared";
 
-// R06: SSR dinámico — datos frescos por request. Elegido `force-dynamic`
-// (justificado en README): deja explícito que nunca se prerenderiza, aunque
-// un refactor futuro deje de leer searchParams.
-export const dynamic = "force-dynamic";
+// R06: SSR dinámico — datos frescos por request. Con cacheComponents se usa
+// `instant = false` + connection() dentro de Suspense: la ruta puede bloquear
+// y el contenido renderiza por request.
+export const instant = false;
 
 const ESTADOS: EstadoCita[] = [
   "pendiente",
@@ -18,9 +21,26 @@ const ESTADOS: EstadoCita[] = [
   "cancelada",
 ];
 
-export default async function DashboardPage({
+export default function DashboardPage({
   searchParams,
 }: PageProps<"/dashboard">) {
+  return (
+    <>
+      <PageHeader
+        title="Dashboard"
+        description="Turnos del día y gestión de estados."
+      />
+      <Suspense fallback={<Skeleton lines={8} />}>
+        <DashboardContent searchParams={searchParams} />
+      </Suspense>
+    </>
+  );
+}
+
+async function DashboardContent({
+  searchParams,
+}: Pick<PageProps<"/dashboard">, "searchParams">) {
+  await connection();
   const sp = await searchParams;
   const date =
     typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date)
@@ -39,10 +59,6 @@ export default async function DashboardPage({
 
   return (
     <>
-      <PageHeader
-        title="Dashboard"
-        description="Turnos del día y gestión de estados."
-      />
       <DashboardFilters date={date} estado={estado} />
       <StatusCounters counts={counts} total={citas.length} />
       <AppointmentTable citas={list} />
