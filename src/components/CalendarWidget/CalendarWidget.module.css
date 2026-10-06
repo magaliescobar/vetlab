@@ -1,5 +1,7 @@
 .calendarRoot {
-  min-height: var(--calendar-min-height);
+  display: flex;
+  flex-direction: column;
+  height: var(--calendar-min-height);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -27,7 +29,18 @@
   --wx-font-family: var(--font-sans);
   --wx-calendar-grid-color: var(--color-border);
   --wx-calendar-weekend-background: var(--color-bg);
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/*
+ * La vista "mes" monta su grilla dentro de .wx-sections (columna flex) >
+ * .wx-section (sin flex): sin flex-grow la sección colapsa a alto 0 y
+ * overflow:hidden oculta las celdas. flex:1 le da altura definida al grid.
+ */
+.calendarRoot :global(.wx-sections .wx-section) {
+  flex: 1;
+  min-height: 0;
 }
 
 /* Color por estado sobre las clases globales del widget. */
