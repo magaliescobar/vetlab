@@ -4,25 +4,26 @@
 
 ▲ Next.js 16.3.8 (Turbopack)
 - Environments: .env.local
-✓ Running next.config.ts took 15ms
+✓ Running next.config.ts took 60ms
 - Cache Components enabled
 
   Creating an optimized production build ...
-✓ Compiled successfully in 474ms
+✓ Compiled successfully in 1380ms
   Running TypeScript ...
-  Finished TypeScript in 993ms ...
+  Finished TypeScript in 1274ms ...
   Collecting page data using 15 workers ...
-  Generating static pages using 15 workers (0/14) ...
-  Generating static pages using 15 workers (3/14) 
-  Generating static pages using 15 workers (6/14) 
-  Generating static pages using 15 workers (10/14) 
-✓ Generating static pages using 15 workers (14/14) in 772ms
+  Generating static pages using 15 workers (0/15) ...
+  Generating static pages using 15 workers (3/15) 
+  Generating static pages using 15 workers (7/15) 
+  Generating static pages using 15 workers (11/15) 
+✓ Generating static pages using 15 workers (15/15) in 463ms
   Finalizing page optimization ...
 
-Route (app)               Revalidate  Expire
-┌ ○ /
-├ ○ /_not-found
+Route (app)                  Revalidate  Expire
+┌ ◐ /
+├ ◐ /_not-found
 ├ ◐ /agenda
+├ ƒ /api/auth/[...nextauth]
 ├ ƒ /api/citas
 ├ ƒ /api/disponibilidad
 ├ ƒ /api/revalidate
@@ -30,13 +31,15 @@ Route (app)               Revalidate  Expire
 ├ ◐ /duenos
 ├   /duenos/[id]
 │ └ ◐ /duenos/[id]
-├ ○ /servicios                    1h      1d
-├ ○ /veterinarios                 1h      1d
+├ ◐ /login
+├ ◐ /servicios                       1h      1d
+├ ◐ /veterinarios                    1h      1d
 └   /veterinarios/[id]
   └ ◐ /veterinarios/[id]
 
 
-○  (Static)             prerendered as static content
+ƒ Proxy (Middleware)
+
 ◐  (Partial Prerender)  prerendered as static HTML with dynamic server-streamed content
 ƒ  (Dynamic)            server-rendered on demand
 

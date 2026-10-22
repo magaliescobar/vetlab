@@ -11,7 +11,10 @@ lab de estrategias de renderizado de Next.js (ver `docs/SPEC.md`).
   de lo que lee runtime APIs (`searchParams`, `params`, `new Date()`)
 - React 19.2.8 · TypeScript strict
 - **MongoDB 7** con driver oficial `mongodb` 7.7 (sin ODM)
-- **TanStack Query** 5.104 para data fetching en cliente
+- **Auth.js** (`next-auth` v5 beta): login por Credentials + bcrypt, roles
+  `admin`/`staff` en el JWT
+- Fetching en cliente con `useFetch` (`src/hooks/useFetch.ts`), hook propio
+  con cache por clave
 - **@svar-ui/react-calendar 2.7.1** (edición open-source/MIT) para la agenda
 - Zod 4, clsx, `server-only` · ESLint + Prettier
 
@@ -38,6 +41,25 @@ docker compose down       # frenar (los datos persisten en el volumen)
 docker compose logs -f    # logs de Mongo
 ```
 
+`npm run seed` también crea los usuarios de demo (ver
+[Autenticación](#autenticación-y-roles)) y dispara el hook `postseed`, que
+invalida los tags de caché que quedaron stale llamando a `POST /api/revalidate`
+(`scripts/revalidate.ts`; si el dev server no está corriendo, avisa y sale sin
+error).
+
+### Variables de entorno
+
+Todas tienen default funcional en `.env.example`:
+
+| Variable | Uso |
+| -------- | --- |
+| `MONGODB_URI` | Conexión a Mongo |
+| `AUTH_SECRET` | Firma de JWTs de Auth.js (generar con `npx auth secret`) |
+| `AUTH_TRUST_HOST` | Requerida en producción self-hosted para que Auth.js confíe en el host |
+| `REVALIDATE_SECRET` | Header `x-revalidate-secret` de `POST /api/revalidate` |
+| `APP_URL` | Base URL que usa `postseed` (default `http://localhost:3000`) |
+| `SIMULATE_LATENCY_MS` | Latencia artificial (ms) para ver el streaming de `/duenos/[id]` |
+
 ## Scripts
 
 | Comando            | Qué hace                                        |
@@ -45,7 +67,7 @@ docker compose logs -f    # logs de Mongo
 | `npm run dev`      | Servidor de desarrollo                          |
 | `npm run build`    | Build de producción (necesita Mongo arriba para prerenderizar `/veterinarios`) |
 | `npm start`        | Servidor de producción                          |
-| `npm run seed`     | Seed idempotente (`tsx --env-file=.env.local`)  |
+| `npm run seed`     | Seed idempotente (`tsx --env-file=.env.local`); dispara `postseed` → `scripts/revalidate.ts` |
 | `npm run lint`     | ESLint (`eslint .`, con `no-explicit-any: error`) |
 | `npm run typecheck`| `tsc --noEmit`                                  |
 | `npm run format`   | Prettier                                        |
@@ -62,7 +84,8 @@ docker compose logs -f    # logs de Mongo
 | `@svar-ui/react-calendar` | ^2.7.1 | Calendario de `/agenda` ([docs](https://svar.dev/react/calendar/)) |
 | `@svar-ui/react-core` | ^2.6.1 | `<Willow>` (tema) y `<Locale>` de SVAR |
 | `@svar-ui/core-locales` + `@svar-ui/calendar-locales` | ^2.6.1 / ^2.7.0 | Locale `es` (semana desde lunes, 24 h) |
-| `@tanstack/react-query` | ^5.104.1 | Fetching en cliente (`/api/disponibilidad`, `/api/citas`) |
+| `next-auth` | ^5.0.0-beta.32 | Auth.js v5: Credentials, JWT con `role`, `/api/auth/*` |
+| `bcryptjs` | ^3.0.3 | Hash de contraseñas (seed + login) |
 | `zod` | ^4.6.5 | Validación de params y payloads |
 | `clsx` | ^2.1.1 | Composición de clases |
 | `use-debounce` | ^10.1.1 | Debounce del buscador de dueños |
@@ -83,7 +106,7 @@ La agenda usa **SVAR React Calendar** (edición MIT):
   estilos, §3.1); los overrides van contra `.wx-willow-theme`.
 - `<Locale words={es}>` combina `core-locales` + `calendar-locales`.
 - `readonly` + vistas `day`/`week`/`month` (timeline y el resto son PRO).
-- El evento `request-data` del store marca el rango visible → TanStack Query
+- El evento `request-data` del store marca el rango visible → `useFetch`
   fetchea `GET /api/citas?from=&to=` y sincroniza la fecha con `SlotPicker`.
 - `onSelectEvent` abre el detalle de la cita; `eventCss` pinta por `estado`.
 - Como la edición gratuita no soporta timezones, las horas se convierten
@@ -93,27 +116,70 @@ La agenda usa **SVAR React Calendar** (edición MIT):
 
 | Ruta | Estrategia | Req. |
 | ---- | ---------- | ---- |
-| `/veterinarios` | **Estática cacheada**: `"use cache"` + `cacheTag("vets")` + `cacheLife("hours")` (~1h o por `updateTag`) | R04 |
-| alta/edición de vet | `createVet`/`updateVet`: `updateTag("vets")` + `revalidatePath` · `POST /api/revalidate` con `x-revalidate-secret` | R05 |
+| `/veterinarios` | `◐` con datos cacheados: `"use cache"` + `cacheTag("vets")` + `cacheLife("hours")` (~1h o por `updateTag`); `AdminOnly` lee sesión por request | R04 |
+| alta/edición de vet | `createVet`/`updateVet` (solo `admin`): `updateTag("vets")` + `revalidatePath` | R05 |
 | `/veterinarios/[id]` | `◐`: `params` dentro de Suspense — perfil (foto/iniciales, bio), horarios y próximos 7 días streameados | — |
-| `/servicios` | **Estática cacheada**: `getServicesCached` tag `services` + altas/ediciones con `createService`/`updateService` | — |
+| `/servicios` | `◐` con datos cacheados: `getServicesCached` tag `services`; altas/ediciones con `createService`/`updateService` (solo `admin`) | — |
+| `/login` | `◐`: `LoginForm` (Credentials) lee `callbackUrl` de `searchParams` en Suspense; con sesión activa el proxy redirige a `/dashboard` | — |
 | `/dashboard` | `◐`: `searchParams` dentro de Suspense → fresh por request, filtros por URL | R06 |
 | `/duenos` | `◐` por `searchParams` (`q`, `page`), URL como fuente de verdad | R07 |
 | `/duenos/[id]` | **Streaming** `◐`: `params` dentro de Suspense + `PetsSection`/`HistorySection` async | R08 |
 | `/agenda` | `◐`: catálogos `"use cache"` + `searchParams` en Suspense (evita congelar la fecha del build en el SSR del calendario) | R09 |
-| `/agenda` slots | **TanStack Query** → `GET /api/disponibilidad` | R10 |
+| `/agenda` slots | **`useFetch`** → `GET /api/disponibilidad` | R10 |
 | agendar cita | **Server Action** `createAppointment` (validación + `canBook` server-side) | R11 |
 | estado de cita | **Server Action** `updateAppointmentEstado` + `useOptimistic` con rollback | R12 |
 | alta dueño+mascota | **Server Action** `registerOwnerWithPet` → `redirect` al perfil | R13 |
 | alta mascota suelta | **Server Action** `registerNewPet` desde el perfil del dueño | — |
+| edición de mascota | **Server Action** `updatePet` desde `PetCard` (`PetEditButton`/`PetEditForm`) | — |
 | `GET /api/disponibilidad` | Route Handler dinámico (`ƒ`), Zod en params | R14 |
 | `GET /api/citas` | Route Handler `ƒ`: feed de citas del calendario | — |
+| `GET`/`POST /api/auth/*` | Route Handlers `ƒ` de Auth.js (`/api/auth/[...nextauth]`) | — |
+| `POST /api/revalidate` | `ƒ`: `revalidateTag(tag, "max")` validando `x-revalidate-secret`; lo invoca `postseed` | — |
 | `lib/data/*` | Capa server-only, `MongoClient` singleton, `cache()` + `"use cache"` | R15 |
 
-Con `cacheComponents` el build distingue: `○` estático (ej. `/`),
-`◐` partial prerender (shell estático + contenido streameado por request:
-`/dashboard`, `/duenos`, `/duenos/[id]`, `/agenda`), `ƒ` dinámico puro
-(los route handlers — no se cachean por defecto).
+Con `cacheComponents` el build distingue `◐` partial prerender (shell
+estático + contenido streameado por request) de `ƒ` dinámico puro (los route
+handlers y el proxy — no se cachean por defecto). Desde que el `AppShell`
+muestra el `AuthButton` (lee `auth()` por request dentro de Suspense) ya no
+queda ninguna página `○` full-estática: incluso `/`, `/servicios` y
+`/veterinarios` salen `◐` — estas dos últimas conservan su shell con
+revalidación (`1h`/`1d`) y solo streamean los huecos dinámicos.
+La salida de `npm run build` quedó capturada en `docs/build-output.txt`.
+
+## Autenticación y roles
+
+Auth.js v5 (`next-auth@beta`) con provider **Credentials** y contraseñas en
+bcrypt en la colección `users`. Piezas:
+
+- `auth.ts` (raíz): `authorize()` valida el payload con Zod, busca el usuario
+  en Mongo (`lib/data/users.ts`) y compara con `bcrypt.compare`.
+- `auth.config.ts`: `pages.signIn = "/login"`, `trustHost` y los callbacks
+  `authorized`/`jwt`/`session` (el `role` viaja en el JWT hasta
+  `session.user.role`, tipado en `types/next-auth.d.ts`).
+- `src/proxy.ts`: el *proxy* de Next 16 (antes `middleware.ts`) corre el
+  callback `authorized` en cada request que matchea.
+- `src/app/api/auth/[...nextauth]/route.ts`: expone los handlers GET/POST.
+- `lib/actions.ts`: Server Actions `authenticate`/`logout` usadas por
+  `LoginForm` y `AuthButton`.
+
+Modelo de acceso del lab:
+
+- **Todas las páginas son públicas**; `authorized` solo rebota `/login` →
+  `/dashboard` cuando ya hay sesión. El login es voluntario (botón en el
+  header), no un gate.
+- Roles `admin`/`staff`: el rol se verifica **del lado servidor** en las
+  actions de catálogo (`createVet`/`updateVet`/`createService`/`updateService`
+  devuelven `NOT_ADMIN` si la sesión no es admin) y **del lado UI** con el
+  Server Component `<AdminOnly>` (oculta los botones de alta). El resto de
+  las mutaciones (citas, dueños, mascotas) no exige sesión — decisión del
+  lab, no un modelo de seguridad real.
+
+Usuarios de demo que crea el seed:
+
+| Email | Password | Rol |
+| ----- | -------- | --- |
+| `admin@vetlab.uy` | `vetlab123` | `admin` |
+| `user@vetlab.uy` | `vetlabuser` | `staff` |
 
 ## Supuestos y decisiones
 
@@ -134,7 +200,8 @@ Cosas que el spec no fija y se resolvieron con criterio (§1.1):
   `/veterinarios/[id]` esperan `params`, y `/agenda` hace `await
   searchParams` sin usarlo solo para forzar render por request.
   `NavLink` va envuelto en Suspense con `NavLinkFallback` porque
-  `usePathname` es runtime data.
+  `usePathname` es runtime data; `AuthButton` y `AdminOnly` también van en
+  Suspense porque leen `auth()` por request.
 - **Contadores del dashboard** cubren todo el día, sin el filtro de `estado`
   (el filtro afecta solo la tabla).
 - **Búsqueda de dueños con `$regex` escapado** (no `$text`): el índice de texto
@@ -156,10 +223,16 @@ Cosas que el spec no fija y se resolvieron con criterio (§1.1):
 - **Extensiones sobre el spec**: `GET /api/citas?from=&to=` (feed del
   calendario al navegar rangos), `actions/catalogo.ts` (`createVet`/`updateVet`
   para R05 y `createService`/`updateService` para el catálogo), `registerNewPet`
-  (agregar mascota a un dueño existente), la sección `/servicios` y el
-  detalle `/veterinarios/[id]` (perfil + horarios + agenda próxima).
-  El alta de vets/servicios/
-  mascotas mantiene las páginas estáticas porque invalidan por `updateTag`.
+  y `updatePet` (alta/edición de mascotas), la sección `/servicios`, el
+  detalle `/veterinarios/[id]` (perfil + horarios + agenda próxima) y todo el
+  sistema de login/roles (Auth.js + colección `users`). El alta de
+  vets/servicios/mascotas invalida por `updateTag` los datos cacheados sin
+  convertir las páginas en dinámicas.
+- **`useFetch` en vez de TanStack Query**: `src/hooks/useFetch.ts` es un
+  fetcher CSR mínimo — cache por clave con `staleTime` (30 s), conserva la
+  data previa mientras recarga (placeholder) y `refreshKey`/`refetch()` para
+  invalidar. Lo usan `SlotPicker` (`/api/disponibilidad`) y `CalendarWidget`
+  (`/api/citas`).
 - **SVAR como excepción de estilos** (§3.1): es la única librería con estilos
   propios. Su CSS (`@svar-ui/react-calendar/all.css`) se importa únicamente en
   `CalendarWidget.tsx`; los overrides en `CalendarWidget.module.css` solo usan
@@ -177,7 +250,8 @@ Cosas que el spec no fija y se resolvieron con criterio (§1.1):
   (expira al instante, read-your-own-writes).
 - **Literales en `@media`**: CSS no admite `var()` en media queries; el único
   literal tolerado es el breakpoint `900px` de `AgendaView.module.css`.
-- **Emails de seed** `@example.com`, teléfonos con formato uruguayo.
+- **Emails de seed** `@example.com` (dueños) y `@vetlab.uy` (usuarios de
+  login), teléfonos con formato uruguayo.
 - **`notFound()` en rutas dinámicas**: Next 16 sirve el shell primero, así que
   el estado HTTP puede ser 200 con `noindex` aunque la UI sea la de "no
   encontrado" (comportamiento de streaming, no un bug del lab).
@@ -187,5 +261,8 @@ Cosas que el spec no fija y se resolvieron con criterio (§1.1):
 - El data layer (`src/lib/data`, `src/lib/db.ts`) es `server-only`: importarlo
   desde un Client Component rompe el build a propósito.
 - `scripts/seed.ts` crea su propio `MongoClient` (no puede importar `lib/db`).
+- Las fotos de vets y mascotas viven en `public/vets` y `public/pets`; en DB
+  se guarda solo el nombre de archivo y la URL se arma con
+  `URL_VETS_IMAGES`/`URL_PETS_IMAGES` (`lib/config.ts`).
 - `SIMULATE_LATENCY_MS` (ms) en `.env.local` agrega latencia artificial a las
   secciones streameadas de `/duenos/[id]` para *ver* el streaming.
