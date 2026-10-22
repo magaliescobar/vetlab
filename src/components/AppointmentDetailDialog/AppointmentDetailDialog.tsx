@@ -11,9 +11,12 @@ import styles from "./AppointmentDetailDialog.module.css";
 export function AppointmentDetailDialog({
   cita,
   onClose,
+  onChanged,
 }: {
   cita: Serialized<AppointmentView> | null;
   onClose: () => void;
+  /** Refresca el feed de citas y los slots tras un cambio de estado (R12). */
+  onChanged?: () => void;
 }) {
   return (
     <Dialog open={cita !== null} onClose={onClose} title="Detalle de la cita">
@@ -60,6 +63,10 @@ export function AppointmentDetailDialog({
               id={cita._id}
               estado={cita.estado}
               inTable={false}
+              onChanged={(next) => {
+                onChanged?.();
+                if (next === "completada" || next === "cancelada") onClose();
+              }}
             />
           </div>
         </div>

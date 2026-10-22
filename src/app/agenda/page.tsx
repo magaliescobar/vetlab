@@ -1,40 +1,47 @@
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { AgendaView } from "@/components/AgendaView/AgendaView";
 import { SectionSkeleton } from "@/components/SectionSkeleton/SectionSkeleton";
-import { getVetsSerialized } from "@/lib/data/vets";
-import { getServicesSerialized } from "@/lib/data/services";
-import { getOwnersSerialized } from "@/lib/data/owners";
-import { getPetsSerialized } from "@/lib/data/pets";
+import { getVetsCached } from "@/lib/data/vets";
+import { getServicesCached } from "@/lib/data/services";
+import { getOwnersCached } from "@/lib/data/owners";
+import { getPetsCached } from "@/lib/data/pets";
 
 // R09: el server entrega el HTML inicial (catálogos por props) y la
-// interactividad vive 100% en el cliente. La página lee la DB sin
-// searchParams/cookies → instant=false + connection() dentro de Suspense
-// para renderizar a request time y no servir datos viejos.
-export const instant = false;
-
-export default function AgendaPage() {
+// interactividad vive 100% en el cliente. Los catálogos usan "use cache"
+// con tags → las mutaciones los invalidan con updateTag.
+// searchParams dentro del Suspense marca la ruta ◐ (misma técnica que
+// /dashboard y /duenos): sin runtime API la página quedaría ○ y el SSR
+// congelaría la fecha del build → hydration mismatch al abrir otro día.
+export default function AgendaPage({
+  searchParams,
+}: PageProps<"/agenda">) {
   return (
     <>
       <PageHeader
         title="Agenda"
-        description="Calendario de turnos. Click en un slot libre para agendar."
+        description="Calendario de turnos."
       />
       <Suspense fallback={<SectionSkeleton title="Turnos" />}>
-        <AgendaContent />
+        <AgendaContent searchParams={searchParams} />
       </Suspense>
     </>
   );
 }
 
-async function AgendaContent() {
-  await connection();
+async function AgendaContent({
+  searchParams,
+}: Pick<PageProps<"/agenda">, "searchParams">) {
+  await searchParams; // runtime API → dynamic render (no se usa el valor)
   const [vets, services, owners, pets] = await Promise.all([
-    getVetsSerialized(),
-    getServicesSerialized(),
-    getOwnersSerialized(),
-    getPetsSerialized(),
+    getVetsCached(),
+    getServicesCached(),
+    getOwnersCached(),
+    getPetsCached(),
   ]);
-  return <AgendaView vets={vets} services={services} owners={owners} pets={pets} />;
+  // Servicios inactivos no se ofrecen para reservar (admin los ve en /servicios).
+  const activos = services.filter((s) => s.activo !== false);
+  return (
+    <AgendaView vets={vets} services={activos} owners={owners} pets={pets} />
+  );
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import type { Vet } from "@/lib/models/vet";
 import type { Serialized } from "@/lib/models/serialized";
 import { updateVet } from "@/actions/catalogo";
 import { INITIAL_FORM_STATE } from "@/lib/types/forms";
 import { FormField } from "../FormField/FormField";
 import { SubmitButton } from "../SubmitButton/SubmitButton";
+import { HorariosFieldset } from "../HorariosFieldset/HorariosFieldset";
 import styles from "./VetEditForm.module.css";
 
 export function VetEditForm({
@@ -18,7 +19,13 @@ export function VetEditForm({
 }) {
   const [state, formAction] = useActionState(updateVet, INITIAL_FORM_STATE);
 
+  // onDone solo ante un state NUEVO: si se dispara por un state.ok viejo
+  // (onDone cambia de identidad en cada render del padre), el modal se
+  // re-cerraría al instante al reabrirlo.
+  const lastHandled = useRef(state);
   useEffect(() => {
+    if (state === lastHandled.current) return;
+    lastHandled.current = state;
     if (state.ok) onDone();
   }, [state, onDone]);
 
@@ -63,6 +70,7 @@ export function VetEditForm({
           aria-describedby={err("bio") ? "vet-bio-error" : undefined}
         />
       </FormField>
+      <HorariosFieldset initial={vet.horarios} error={err("horarios")} />
       {state.message && !state.ok ? (
         <p className={styles.formError} role="alert">
           {state.message}

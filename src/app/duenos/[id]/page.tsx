@@ -1,20 +1,15 @@
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { ObjectId } from "mongodb";
 import { OwnerHeader } from "@/components/OwnerHeader/OwnerHeader";
-import { PetsSection } from "@/components/PetsSection/PetsSection";
+import { PetCard } from "@/components/PetCard/PetCard";
 import { HistorySection } from "@/components/HistorySection/HistorySection";
 import { SectionSkeleton } from "@/components/SectionSkeleton/SectionSkeleton";
 import { Skeleton } from "@/components/Skeleton/Skeleton";
-import { getOwnerById } from "@/lib/data/owners";
-import { serialize } from "@/lib/models/serialized";
+import { getOwnerByIdCached } from "@/lib/data/owners";
+import { NewPetButton } from "@/components/NewPetButton/NewPetButton";
 
-// R08: streaming SSR. La página lee la DB sin searchParams → instant=false
-// + connection() dentro de Suspense (si no, Next la prerenderizaría con
-// datos viejos y el driver de Mongo rompería el prerender con sync IO).
-export const instant = false;
-
+// R08: streaming SSR. Header y mascotas usan "use cache" (tags owners/pets)
+// y el historial streamea dentro de Suspense.
 export default function OwnerPage({
   params,
 }: PageProps<"/duenos/[id]">) {
@@ -28,24 +23,22 @@ export default function OwnerPage({
 async function OwnerContent({
   params,
 }: Pick<PageProps<"/duenos/[id]">, "params">) {
-  await connection();
-  const { id } = await params;
+  const { id } = await params;  // request-time API = suspension point
   if (!/^[0-9a-fA-F]{24}$/.test(id)) notFound();
 
-  // Único await del shell: el header llega inmediato. Las secciones pesadas
-  // (mascotas, historial) streamean detrás de sus propios Suspense.
-  const owner = await getOwnerById(new ObjectId(id));
+  const owner = await getOwnerByIdCached(id);
   if (!owner) notFound();
 
   return (
     <>
-      <OwnerHeader owner={serialize(owner)} />
+      <OwnerHeader owner={owner} />
       <Suspense fallback={<SectionSkeleton title="Mascotas" />}>
-        <PetsSection ownerId={id} />
+        <PetCard ownerId={id} />
       </Suspense>
       <Suspense fallback={<SectionSkeleton title="Historial de citas" />}>
         <HistorySection ownerId={id} />
       </Suspense>
+      <NewPetButton ownerId={id} />
     </>
   );
 }

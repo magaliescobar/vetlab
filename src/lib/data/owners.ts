@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
-import type { ObjectId } from "mongodb";
+import { cacheLife, cacheTag } from "next/cache";
+import { ObjectId } from "mongodb";
 import { getDb } from "../db";
 import type { Owner } from "../models/owner";
 import { serialize, type Serialized } from "../models/serialized";
@@ -17,6 +18,20 @@ export async function getOwnerByIdSerialized(
 ): Promise<Serialized<Owner> | null> {
   const owner = await getOwnerById(id);
   return owner ? serialize(owner) : null;
+}
+
+/**
+ * Versión cacheada por id: entra al static shell/prefetch. El tag
+ * `owner:${id}` permite invalidar solo este dueño; "owners" cubre
+ * los listados cacheados.
+ */
+export async function getOwnerByIdCached(
+  id: string,
+): Promise<Serialized<Owner> | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("owners", `owner:${id}`);
+  return getOwnerByIdSerialized(new ObjectId(id));
 }
 
 function escapeRegExp(s: string): string {
@@ -78,4 +93,12 @@ export async function getOwnersSerialized(): Promise<Serialized<Owner[]>> {
     .sort({ apellido: 1, nombre: 1 })
     .toArray();
   return serialize(owners);
+}
+
+/** Versión cacheada con tag "owners" (catálogo, cambia poco). */
+export async function getOwnersCached(): Promise<Serialized<Owner[]>> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("owners");
+  return getOwnersSerialized();
 }

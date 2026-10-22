@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { createAppointment } from "@/actions/citas";
 import { INITIAL_FORM_STATE } from "@/lib/types/forms";
 import type { Owner } from "@/lib/models/owner";
@@ -10,6 +9,7 @@ import type { Service } from "@/lib/models/service";
 import type { Vet } from "@/lib/models/vet";
 import type { Serialized } from "@/lib/models/serialized";
 import type { BookingTarget } from "../AgendaView/AgendaView";
+import { formatFechaIso } from "@/lib/format";
 import { Dialog } from "../Dialog/Dialog";
 import { FormField } from "../FormField/FormField";
 import { SubmitButton } from "../SubmitButton/SubmitButton";
@@ -22,6 +22,8 @@ interface Props {
   vets: Serialized<Vet[]>;
   services: Serialized<Service[]>;
   onClose: () => void;
+  /** Se dispara solo tras un alta exitosa (el padre refresca slots + citas). */
+  onBooked: () => void;
 }
 
 /** R11 — Form de agendar por Server Action. La hora llega precargada del slot. */
@@ -32,6 +34,7 @@ export function BookingDialog({
   vets,
   services,
   onClose,
+  onBooked,
 }: Props) {
   return (
     <Dialog
@@ -48,6 +51,7 @@ export function BookingDialog({
           vets={vets}
           services={services}
           onDone={onClose}
+          onBooked={onBooked}
         />
       ) : null}
     </Dialog>
@@ -61,25 +65,32 @@ function BookingForm({
   vets,
   services,
   onDone,
+  onBooked,
 }: Omit<Props, "onClose"> & {
   target: BookingTarget;
   onDone: () => void;
 }) {
-  const queryClient = useQueryClient();
   const [state, formAction] = useActionState(
     createAppointment,
     INITIAL_FORM_STATE,
   );
   const [ownerId, setOwnerId] = useState("");
+  const [petId, setPetId] = useState("");
+  const [formKey, setFormKey] = useState(0);
 
+  const lastHandled = useRef(state);
   useEffect(() => {
-    if (state.ok) {
-      // R10: invalidar slots + feed de citas para reflejar el turno nuevo.
-      queryClient.invalidateQueries({ queryKey: ["slots"] });
-      queryClient.invalidateQueries({ queryKey: ["citas"] });
-      onDone();
+    if (state === lastHandled.current) return;
+    lastHandled.current = state;
+    if (!state.ok) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- remonta el form para limpiar inputs no controlados tras un submit fallido
+      setFormKey((k) => k + 1);
+      return;
     }
-  }, [state, queryClient, onDone]);
+    // R10: avisar al padre para refrescar slots + feed de citas.
+    onBooked();
+    onDone();
+  }, [state, onBooked, onDone]);
 
   const petsDelOwner = useMemo(
     () => pets.filter((p) => p.ownerId === ownerId),
@@ -90,11 +101,17 @@ function BookingForm({
   const [fecha, hora] = target.fechaHora.split("T");
 
   return (
-    <form action={formAction} className={styles.form}>
+    <form key={formKey} action={formAction} className={styles.form}>
       <input type="hidden" name="fechaHora" value={target.fechaHora} />
+      <input type="hidden" name="vetId" value={target.vetId} />
       <p className={styles.resumen}>
-        {fecha} a las {hora}
+        {formatFechaIso(fecha)} a las {hora}
       </p>
+      {err("fechaHora")?.map((m) => (
+        <p key={m} className={styles.formError} role="alert">
+          {m}
+        </p>
+      ))}
 
       <FormField label="Dueño" htmlFor="cita-owner" error={err("ownerId")}>
         <select
@@ -102,7 +119,10 @@ function BookingForm({
           name="ownerId"
           required
           value={ownerId}
-          onChange={(e) => setOwnerId(e.target.value)}
+          onChange={(e) => {
+            setOwnerId(e.target.value);
+            setPetId("");
+          }}
           aria-invalid={err("ownerId") ? "true" : undefined}
           aria-describedby={err("ownerId") ? "cita-owner-error" : undefined}
         >
@@ -123,6 +143,8 @@ function BookingForm({
           name="petId"
           required
           disabled={!ownerId}
+          value={petId}
+          onChange={(e) => setPetId(e.target.value)}
           aria-invalid={err("petId") ? "true" : undefined}
           aria-describedby={err("petId") ? "cita-pet-error" : undefined}
         >
@@ -140,9 +162,8 @@ function BookingForm({
       <FormField label="Veterinario" htmlFor="cita-vet" error={err("vetId")}>
         <select
           id="cita-vet"
-          name="vetId"
-          required
-          defaultValue={target.vetId}
+          value={target.vetId}
+          disabled
           aria-invalid={err("vetId") ? "true" : undefined}
           aria-describedby={err("vetId") ? "cita-vet-error" : undefined}
         >

@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useFetch } from "@/hooks/useFetch";
 import type { Vet } from "@/lib/models/vet";
 import type { Serialized } from "@/lib/models/serialized";
 import type { Slot } from "@/lib/models/views";
-import { formatHora } from "@/lib/format";
+import { formatFechaIso, formatHora } from "@/lib/format";
 import { toLocalIso, toWallClock } from "@/lib/datetime";
 import { Button } from "../Button/Button";
 import { Skeleton } from "../Skeleton/Skeleton";
@@ -20,50 +20,52 @@ async function fetchSlots(vetId: string, date: string): Promise<Slot[]> {
 }
 
 /**
- * R10 — Slots del vet en el día visible del calendario, via TanStack Query:
+ * R10 — Slots del vet en el día visible del calendario, via useFetch:
  * loading, error con refetch, y cache por (vetId, date) al volver al día.
  */
 export function SlotPicker({
   vetId,
   vets,
   dateISO,
+  refreshKey,
   onPick,
 }: {
   vetId: string;
   vets: Serialized<Vet[]>;
   dateISO: string;
+  refreshKey: number;
   onPick: (fechaHora: string) => void;
 }) {
-  const slotsQuery = useQuery({
-    queryKey: ["slots", vetId, dateISO],
-    queryFn: () => fetchSlots(vetId, dateISO),
-    enabled: Boolean(vetId && dateISO),
-    placeholderData: (prev) => prev,
-  });
+  const slotsQuery = useFetch<Slot[]>(
+    vetId && dateISO ? `slots|${vetId}|${dateISO}` : null,
+    () => fetchSlots(vetId, dateISO),
+    { refreshKey },
+  );
 
+  const slots = slotsQuery.data ?? [];
   const vetNombre = vets.find((v) => v._id === vetId)?.nombre;
 
   return (
     <div className={styles.panel}>
       <h2 className={styles.title}>Horarios{vetNombre ? ` — ${vetNombre}` : ""}</h2>
-      <p className={styles.date}>{dateISO || "…"}</p>
+      <p className={styles.date}>{dateISO ? formatFechaIso(dateISO) : "…"}</p>
 
       {!vetId ? (
         <p className={styles.hint}>Elegí un veterinario para ver los horarios libres.</p>
-      ) : slotsQuery.isPending ? (
+      ) : !dateISO || slotsQuery.isPending ? (
         <Skeleton lines={6} />
-      ) : slotsQuery.isError ? (
+      ) : slotsQuery.error ? (
         <div className={styles.errorBox} role="alert">
           <p className={styles.errorText}>{slotsQuery.error.message}</p>
           <Button variant="secondary" onClick={() => slotsQuery.refetch()}>
             Reintentar
           </Button>
         </div>
-      ) : slotsQuery.data.length === 0 ? (
+      ) : slots.length === 0 ? (
         <p className={styles.hint}>El veterinario no atiende este día.</p>
       ) : (
         <div className={styles.grid}>
-          {slotsQuery.data.map((slot) => (
+          {slots.map((slot) => (
             <button
               key={slot.inicio}
               type="button"

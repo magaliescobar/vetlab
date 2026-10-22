@@ -1,10 +1,13 @@
 import type { Vet } from "@/lib/models/vet";
+import Image from "next/image";
+import Link from "next/link";
 import type { Serialized } from "@/lib/models/serialized";
 import { Card } from "../Card/Card";
 import { VetEditButton } from "../VetEditButton/VetEditButton";
 import styles from "./VetCard.module.css";
+import { URL_VETS_IMAGES } from "@/lib/config";
 
-function iniciales(nombre: string): string {
+export function iniciales(nombre: string): string {
   return nombre
     .replace(/^(Dr|Dra)\.\s*/i, "")
     .split(/\s+/)
@@ -14,20 +17,22 @@ function iniciales(nombre: string): string {
     .toUpperCase();
 }
 
+// si no tiene foto, muestra las iniciales del nombre
 export function VetCard({ vet }: { vet: Serialized<Vet> }) {
   return (
     <Card className={styles.card}>
       <div className={styles.header}>
         {vet.fotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- foto local en /public, sin optimización necesaria
-          <img className={styles.avatar} src={vet.fotoUrl} alt={vet.nombre} />
+          <Image className={styles.avatar} src={`${URL_VETS_IMAGES}/${vet.fotoUrl}`} alt={vet.nombre} width={64} height={64} />
         ) : (
           <span className={styles.avatarFallback} aria-hidden="true">
             {iniciales(vet.nombre)}
           </span>
         )}
         <div>
-          <h2 className={styles.nombre}>{vet.nombre}</h2>
+          <h2 className={styles.nombre}>
+            <Link href={`/veterinarios/${vet._id}`}>{vet.nombre}</Link>
+          </h2>
           <p className={styles.especialidad}>{vet.especialidad}</p>
         </div>
       </div>

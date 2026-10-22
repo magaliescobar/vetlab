@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
-import { NavLink } from "../NavLink/NavLink";
+import { NavLink, NavLinkFallback } from "../NavLink/NavLink";
+import { AuthButton } from "../AuthButton/AuthButton";
 import styles from "./AppShell.module.css";
 
 const NAV = [
@@ -8,6 +10,7 @@ const NAV = [
   { href: "/agenda", label: "Agenda" },
   { href: "/duenos", label: "Dueños" },
   { href: "/veterinarios", label: "Veterinarios" },
+  { href: "/servicios", label: "Servicios" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -19,12 +22,25 @@ export function AppShell({ children }: { children: ReactNode }) {
             VetLab
           </Link>
           <nav className={styles.nav} aria-label="Navegación principal">
-            {NAV.map((item) => (
-              <NavLink key={item.href} href={item.href}>
-                {item.label}
-              </NavLink>
-            ))}
+            <Suspense
+              fallback={NAV.map((item) => (
+                <NavLinkFallback key={item.href} href={item.href}>
+                  {item.label}
+                </NavLinkFallback>
+              ))}
+            >
+              {NAV.map((item) => (
+                <NavLink key={item.href} href={item.href}>
+                  {item.label}
+                </NavLink>
+              ))}
+            </Suspense>
           </nav>
+          <div className={styles.authSlot}>
+            <Suspense fallback={null}>
+              <AuthButton />
+            </Suspense>
+          </div>
         </div>
       </header>
       <main className={styles.main}>

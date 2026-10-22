@@ -5,11 +5,11 @@ const fmtHora = new Intl.DateTimeFormat("es-UY", {
 });
 
 const fmtFecha = new Intl.DateTimeFormat("es-UY", {
-  timeZone: CLINIC_TZ, day: "numeric", month: "short", year: "numeric",
+  timeZone: CLINIC_TZ, day: "2-digit", month: "2-digit", year: "numeric",
 });
 
-const fmtFechaDia = new Intl.DateTimeFormat("es-UY", {
-  timeZone: CLINIC_TZ, weekday: "short", day: "numeric", month: "short", year: "numeric",
+const fmtDia = new Intl.DateTimeFormat("es-UY", {
+  timeZone: CLINIC_TZ, weekday: "short",
 });
 
 const fmtPrecio = new Intl.NumberFormat("es-UY", {
@@ -23,11 +23,18 @@ export function formatHora(d: Date | string): string {
 }
 
 export function formatFecha(d: Date | string): string {
-  return fmtFecha.format(toDate(d));
+  const parts = fmtFecha.formatToParts(toDate(d));
+  const g = (t: string) => parts.find((p) => p.type === t)?.value;
+  return `${g("day")}-${g("month")}-${g("year")}`;
 }
 
 export function formatFechaDia(d: Date | string): string {
-  return fmtFechaDia.format(toDate(d));
+  return `${fmtDia.format(toDate(d))} ${formatFecha(d)}`;
+}
+
+export function formatFechaIso(iso: string): string {
+  const [y, m, d] = iso.split("T")[0].split("-");
+  return `${d}-${m}-${y}`;
 }
 
 export function formatPrecio(n: number): string {

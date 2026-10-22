@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { DashboardFilters } from "@/components/DashboardFilters/DashboardFilters";
 import { StatusCounters } from "@/components/StatusCounters/StatusCounters";
@@ -10,10 +9,7 @@ import { todayISO } from "@/lib/datetime";
 import type { EstadoCita } from "@/lib/models/shared";
 
 // R06: SSR dinámico — datos frescos por request. Con cacheComponents se usa
-// `instant = false` + connection() dentro de Suspense: la ruta puede bloquear
-// y el contenido renderiza por request.
-export const instant = false;
-
+// searchParams dentro de Suspense: el contenido renderiza por request.
 const ESTADOS: EstadoCita[] = [
   "pendiente",
   "confirmada",
@@ -40,7 +36,6 @@ export default function DashboardPage({
 async function DashboardContent({
   searchParams,
 }: Pick<PageProps<"/dashboard">, "searchParams">) {
-  await connection();
   const sp = await searchParams;
   const date =
     typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date)

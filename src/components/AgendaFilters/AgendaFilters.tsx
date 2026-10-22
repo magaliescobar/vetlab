@@ -31,6 +31,7 @@ export function AgendaFilters({
       <label className={styles.label}>
         Veterinario
         <select
+          id="agenda-vet"
           value={vetId}
           onChange={(e) => onVetChange(e.target.value)}
           className={styles.select}
@@ -46,6 +47,7 @@ export function AgendaFilters({
       <label className={styles.label}>
         Estado
         <select
+          id="agenda-estado"
           value={estado}
           onChange={(e) => onEstadoChange(e.target.value as EstadoCita | "")}
           className={styles.select}

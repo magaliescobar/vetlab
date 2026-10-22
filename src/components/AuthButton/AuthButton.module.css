@@ -1,0 +1,28 @@
+.loginLink {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-tight);
+  color: var(--color-on-primary);
+  background: var(--color-primary-500);
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+
+.loginLink:hover {
+  background: var(--color-primary-600);
+}
+
+.logoutForm {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.userName {
+  font-size: var(--fs-sm);
+  color: var(--color-text-soft);
+}

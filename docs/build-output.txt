@@ -4,36 +4,39 @@
 
 ▲ Next.js 16.3.8 (Turbopack)
 - Environments: .env.local
-⚠ Warning: Next.js ignored pnpm-lock.yaml in /home/devmaga/Pyxis because it is outside the current Git repository (/home/devmaga/Pyxis/vetlab).
- To use this directory, set `turbopack.root` in your Next.js config.
-
-✓ Running next.config.ts took 16ms
+✓ Running next.config.ts took 15ms
+- Cache Components enabled
 
   Creating an optimized production build ...
-✓ Compiled successfully in 128ms
+✓ Compiled successfully in 474ms
   Running TypeScript ...
-  Finished TypeScript in 965ms ...
-  Collecting page data using 13 workers ...
-  Generating static pages using 13 workers (0/7) ...
-  Generating static pages using 13 workers (1/7) 
-  Generating static pages using 13 workers (3/7) 
-  Generating static pages using 13 workers (5/7) 
-✓ Generating static pages using 13 workers (7/7) in 523ms
+  Finished TypeScript in 993ms ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/14) ...
+  Generating static pages using 15 workers (3/14) 
+  Generating static pages using 15 workers (6/14) 
+  Generating static pages using 15 workers (10/14) 
+✓ Generating static pages using 15 workers (14/14) in 772ms
   Finalizing page optimization ...
 
-Route (app)              Revalidate  Expire
+Route (app)               Revalidate  Expire
 ┌ ○ /
 ├ ○ /_not-found
-├ ƒ /agenda
+├ ◐ /agenda
 ├ ƒ /api/citas
 ├ ƒ /api/disponibilidad
 ├ ƒ /api/revalidate
-├ ƒ /dashboard
-├ ƒ /duenos
-├ ƒ /duenos/[id]
-└ ○ /veterinarios                1h      1y
+├ ◐ /dashboard
+├ ◐ /duenos
+├   /duenos/[id]
+│ └ ◐ /duenos/[id]
+├ ○ /servicios                    1h      1d
+├ ○ /veterinarios                 1h      1d
+└   /veterinarios/[id]
+  └ ◐ /veterinarios/[id]
 
 
-○  (Static)   prerendered as static content
-ƒ  (Dynamic)  server-rendered on demand
+○  (Static)             prerendered as static content
+◐  (Partial Prerender)  prerendered as static HTML with dynamic server-streamed content
+ƒ  (Dynamic)            server-rendered on demand
 

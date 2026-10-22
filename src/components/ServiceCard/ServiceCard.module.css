@@ -1,0 +1,43 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.nombre {
+  margin: 0;
+  font-size: var(--fs-md);
+  line-height: var(--lh-tight);
+}
+
+.inactivo {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-danger);
+}
+
+.descripcion {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-soft);
+  flex: 1;
+}
+
+.detalles {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-primary-600);
+  font-weight: var(--fw-medium);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+}

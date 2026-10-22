@@ -35,3 +35,28 @@
   font-size: var(--fs-xs);
   color: var(--color-text-mute);
 }
+
+.footer {
+  margin-top: var(--space-3);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.avatar,
+.avatarFallback {
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-md);
+}

@@ -7,6 +7,7 @@
  * misma lógica de solapamiento de la app (lib/availability.ts).
  */
 import { MongoClient, ObjectId } from "mongodb";
+import bcrypt from "bcryptjs";
 import {
   appointmentInterval,
   fitsIn,
@@ -23,6 +24,7 @@ import type { Owner } from "../src/lib/models/owner";
 import type { Pet } from "../src/lib/models/pet";
 import type { Service } from "../src/lib/models/service";
 import type { EstadoCita, Horarios } from "../src/lib/models/shared";
+import type { User } from "../src/lib/models/user";
 import type { Vet } from "../src/lib/models/vet";
 
 const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017";
@@ -79,14 +81,14 @@ const VETS: Omit<Vet, "_id">[] = [
     nombre: "Dra. Lucía Fernández",
     especialidad: "Medicina general",
     bio: "Clínica médica de pequeños animales. Diez años de experiencia en atención primaria.",
-    fotoUrl: "/vets/lucia.svg",
+    fotoUrl: "lucia.png",
     horarios: HORARIOS_LUCIA,
   },
   {
     nombre: "Dr. Martín Pereira",
     especialidad: "Cirugía",
     bio: "Cirujano de tejidos blandos. Referente interno para procedimientos menores.",
-    fotoUrl: "/vets/martin.svg",
+    fotoUrl: "martin.png",
     horarios: HORARIOS_MARTIN,
   },
   {
@@ -132,7 +134,7 @@ async function main() {
   const db = client.db("vetlab");
 
   // Idempotente: vaciar las colecciones antes de insertar.
-  for (const name of ["owners", "pets", "vets", "services", "appointments"]) {
+  for (const name of ["owners", "pets", "vets", "services", "appointments", "users"]) {
     await db.collection(name).deleteMany({});
   }
 
@@ -271,11 +273,29 @@ async function main() {
     }
   }
 
+  const users: User[] = [
+    {
+      _id: new ObjectId(),
+      nombre: "Admin VetLab",
+      email: "admin@vetlab.uy",
+      password: await bcrypt.hash("vetlab123", 10),
+      role: "admin",
+    },
+    {
+      _id: new ObjectId(),
+      nombre: "User VetLab",
+      email: "user@vetlab.uy",
+      password: await bcrypt.hash("vetlabuser", 10),
+      role: "staff",
+    },
+  ];
+
   await db.collection<Service>("services").insertMany(services);
   await db.collection<Vet>("vets").insertMany(vets);
   await db.collection<Owner>("owners").insertMany(owners);
   await db.collection<Pet>("pets").insertMany(pets);
   await db.collection<Appointment>("appointments").insertMany(appointments);
+  await db.collection<User>("users").insertMany(users);
 
   // Índices (spec §1.3).
   await db.collection("owners").createIndex({ email: 1 }, { unique: true });
@@ -286,8 +306,10 @@ async function main() {
   await db.collection("pets").createIndex({ ownerId: 1 });
   await db.collection("services").createIndex({ slug: 1 }, { unique: true });
   await db.collection("appointments").createIndex({ vetId: 1, fechaHora: 1 });
+  await db.collection("appointments").createIndex({ petId: 1, fechaHora: 1 });
   await db.collection("appointments").createIndex({ fechaHora: 1 });
   await db.collection("appointments").createIndex({ ownerId: 1 });
+  await db.collection("users").createIndex({ email: 1 }, { unique: true });
 
   console.log("Seed OK:", {
     services: services.length,
@@ -295,6 +317,7 @@ async function main() {
     owners: owners.length,
     pets: pets.length,
     appointments: appointments.length,
+    users: users.length,
     hoy: `${hoy} (${appointments.filter((a) => {
       const { start, end } = { start: localToUtc(hoy, "00:00"), end: localToUtc(hoy, "24:00") };
       return a.fechaHora >= start && a.fechaHora < end;

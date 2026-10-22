@@ -150,6 +150,17 @@ export function NewOwnerForm() {
               placeholder="4.5"
             />
           </FormField>
+          <FormField
+            label="Foto URL (opcional)"
+            htmlFor="pet-foto"
+            error={err("petFotoUrl")}
+          >
+            <input
+              id="pet-foto"
+              name="petFotoUrl"
+              placeholder="https://..."
+            />
+          </FormField>
         </div>
         <FormField
           label="Notas (opcional)"

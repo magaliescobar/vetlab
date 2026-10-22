@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useReducer, useState } from "react";
 import type { Owner } from "@/lib/models/owner";
 import type { Pet } from "@/lib/models/pet";
 import type { Service } from "@/lib/models/service";
@@ -34,12 +33,9 @@ export interface BookingTarget {
  * calendario, diálogos) y ninguna interacción navega ni recarga la página.
  */
 export function AgendaView({ vets, services, owners, pets }: Props) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
-      }),
-  );
+  // Al agendar o cambiar el estado de una cita, bump de refreshKey fuerza el
+  // refetch del feed del calendario y de los slots (reemplaza invalidateQueries).
+  const [refreshKey, refreshAgenda] = useReducer((x: number) => x + 1, 0);
   const [vetId, setVetId] = useState<string>("");
   const [estado, setEstado] = useState<EstadoCita | "">("");
   const [calDateISO, setCalDateISO] = useState<string>("");
@@ -49,7 +45,7 @@ export function AgendaView({ vets, services, owners, pets }: Props) {
   const [booking, setBooking] = useState<BookingTarget | null>(null);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       <AgendaFilters
         vets={vets}
         vetId={vetId}
@@ -62,6 +58,7 @@ export function AgendaView({ vets, services, owners, pets }: Props) {
           <CalendarWidget
             vetId={vetId}
             estado={estado}
+            refreshKey={refreshKey}
             onDateChange={setCalDateISO}
             onSelect={setSelected}
           />
@@ -71,6 +68,7 @@ export function AgendaView({ vets, services, owners, pets }: Props) {
             vetId={vetId}
             vets={vets}
             dateISO={calDateISO}
+            refreshKey={refreshKey}
             onPick={(fechaHora) =>
               setBooking({ vetId, fechaHora })
             }
@@ -80,6 +78,7 @@ export function AgendaView({ vets, services, owners, pets }: Props) {
       <AppointmentDetailDialog
         cita={selected}
         onClose={() => setSelected(null)}
+        onChanged={refreshAgenda}
       />
       <BookingDialog
         target={booking}
@@ -88,7 +87,8 @@ export function AgendaView({ vets, services, owners, pets }: Props) {
         vets={vets}
         services={services}
         onClose={() => setBooking(null)}
+        onBooked={refreshAgenda}
       />
-    </QueryClientProvider>
+    </>
   );
 }

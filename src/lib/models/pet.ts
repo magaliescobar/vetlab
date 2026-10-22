@@ -8,5 +8,6 @@ export interface Pet {
   raza?: string;
   fechaNacimiento?: Date;
   pesoKg?: number;
+  fotoUrl?: string;
   notas?: string;
 }

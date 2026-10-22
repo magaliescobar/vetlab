@@ -3,11 +3,11 @@
 import {
   startTransition,
   useActionState,
-  useContext,
   useEffect,
   useOptimistic,
+  useRef,
+  useState,
 } from "react";
-import { QueryClientContext } from "@tanstack/react-query";
 import { updateAppointmentEstado } from "@/actions/citas";
 import type { EstadoCita } from "@/lib/models/shared";
 import type { FormState } from "@/lib/types/forms";
@@ -25,31 +25,54 @@ export function AppointmentStatusActions({
   id,
   estado,
   inTable = true,
+  onChanged,
 }: {
   id: string;
   estado: EstadoCita;
   inTable?: boolean;
+  /** En /agenda refresca el feed del calendario y los slots tras un cambio
+   * exitoso. Recibe el estado al que pasó la cita. En /dashboard no se pasa
+   * (la revalidación la hace revalidatePath en el server). */
+  onChanged?: (estado: EstadoCita) => void;
 }) {
   const [formState, dispatch] = useActionState<FormState, FormData>(
     updateAppointmentEstado,
     { ok: false },
   );
-  const [optimisticEstado, setOptimisticEstado] = useOptimistic(estado);
+  // baseEstado = último estado real conocido (el prop, o el destino del último
+  // cambio exitoso) y base de useOptimistic. En /agenda el padre no actualiza
+  // el prop `estado` tras el cambio (selected queda stale): sin esto la UI
+  // "rebotaría" al estado anterior al terminar la transition. Ante un error,
+  // useOptimistic vuelve a este valor (rollback).
+  const [baseEstado, setBaseEstado] = useState(estado);
+  const [prevEstado, setPrevEstado] = useState(estado);
+  // Sync con el prop: en /dashboard revalidatePath trae el estado nuevo.
+  if (prevEstado !== estado) {
+    setPrevEstado(estado);
+    setBaseEstado(estado);
+  }
+  const [optimisticEstado, setOptimisticEstado] = useOptimistic(baseEstado);
+  // Estado destino del último submit, para el callback post-éxito.
+  const submittedRef = useRef<EstadoCita | null>(null);
+  // Último onChanged: si el padre pasa un callback inline cambia de identidad
+  // en cada render; depender de él en el efecto re-dispararía refreshAgenda en
+  // bucle. El efecto solo corre cuando cambia formState.
+  const onChangedRef = useRef(onChanged);
+  useEffect(() => {
+    onChangedRef.current = onChanged;
+  });
   const Cell = inTable ? "td" : "div";
 
-  // En /agenda el componente vive bajo QueryClientProvider: invalidar el feed
-  // del calendario y los slots tras un cambio exitoso. En /dashboard no hay
-  // provider (la revalidación la hace revalidatePath en el server).
-  const queryClient = useContext(QueryClientContext);
   useEffect(() => {
-    if (formState.ok) {
-      queryClient?.invalidateQueries({ queryKey: ["citas"] });
-      queryClient?.invalidateQueries({ queryKey: ["slots"] });
+    if (formState.ok && submittedRef.current) {
+      setBaseEstado(submittedRef.current);
+      onChangedRef.current?.(submittedRef.current);
     }
-  }, [formState, queryClient]);
+  }, [formState]);
 
   function submit(formData: FormData) {
     const next = formData.get("estado") as EstadoCita;
+    submittedRef.current = next;
     startTransition(() => {
       setOptimisticEstado(next);
       dispatch(formData);

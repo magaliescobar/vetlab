@@ -8,7 +8,7 @@ import { getOwnerById } from "@/lib/data/owners";
 import { getVetById } from "@/lib/data/vets";
 import { getServiceById } from "@/lib/data/services";
 import { getAppointmentById } from "@/lib/data/appointments";
-import { canBook } from "@/lib/data/availability";
+import { canBook, petHasOverlap } from "@/lib/data/availability";
 import { localToUtc } from "@/lib/availability";
 import { CLINIC_TZ, SLOT_STEP_MIN } from "@/lib/config";
 import type { EstadoCita } from "@/lib/models/shared";
@@ -87,12 +87,26 @@ export async function createAppointment(
     };
   }
 
-  // Re-validación de disponibilidad inmediatamente antes de insertar (race).
-  if (!(await canBook(vet, start, service.duracionMin, dateISO))) {
+  // Re-validación de disponibilidad inmediatamente antes de insertar
+  // el horario del vet debe seguir libre y la mascota no puede tener dos
+  // turnos activos solapados, aunque sea con otro veterinario.
+  const [vetLibre, mascotaOcupada] = await Promise.all([
+    canBook(vet, start, service.duracionMin, dateISO),
+    petHasOverlap(petId, start, service.duracionMin),
+  ]);
+  if (!vetLibre) {
     return {
       ok: false,
       fieldErrors: {
         fechaHora: ["Ese horario ya no está disponible para el veterinario"],
+      },
+    };
+  }
+  if (mascotaOcupada) {
+    return {
+      ok: false,
+      fieldErrors: {
+        petId: ["La mascota ya tiene un turno que se solapa con ese horario"],
       },
     };
   }

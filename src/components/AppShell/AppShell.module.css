@@ -35,6 +35,12 @@
   flex-wrap: wrap;
 }
 
+.authSlot {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
 .main {
   flex: 1;
 }

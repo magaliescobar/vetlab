@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useFetch } from "@/hooks/useFetch";
 import { Calendar, Willow } from "@svar-ui/react-calendar";
 import type {
   CalendarInstanceApi,
@@ -46,11 +46,13 @@ const words = { ...coreEs, ...calendarEs };
 export function CalendarWidget({
   vetId,
   estado,
+  refreshKey,
   onDateChange,
   onSelect,
 }: {
   vetId: string;
   estado: EstadoCita | "";
+  refreshKey: number;
   onDateChange: (dateISO: string) => void;
   onSelect: (cita: CitaView) => void;
 }) {
@@ -85,11 +87,11 @@ export function CalendarWidget({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const citasQuery = useQuery({
-    queryKey: ["citas", range.from, range.to],
-    queryFn: () => fetchCitas(range.from, range.to),
-    placeholderData: (prev) => prev,
-  });
+  const citasQuery = useFetch<CitaView[]>(
+    `citas|${range.from}|${range.to}`,
+    () => fetchCitas(range.from, range.to),
+    { refreshKey },
+  );
 
   const citaById = useMemo(
     () => new Map((citasQuery.data ?? []).map((c) => [c._id, c])),

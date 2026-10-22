@@ -25,3 +25,17 @@ export function NavLink({
     </Link>
   );
 }
+
+export function NavLinkFallback({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link href={href} className={styles.link}>
+      {children}
+    </Link>
+  );
+}

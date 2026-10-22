@@ -30,5 +30,24 @@ export const ownerWithPetSchema = z.object({
     .regex(/^\d+(\.\d+)?$/, "Peso inválido")
     .optional()
     .or(z.literal("")),
+  petFotoUrl: z.string().trim().max(500).optional().or(z.literal("")),
+  petNotas: z.string().trim().max(500).optional(),
+});
+
+export const petSchema = z.object({
+  petNombre: z.string().trim().min(1, "Nombre de la mascota requerido").max(100),
+  petEspecie: z.enum(ESPECIES),
+  petRaza: z.string().trim().max(100).optional(),
+  petFechaNacimiento: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
+    .optional()
+    .or(z.literal("")),
+  petPesoKg: z
+    .string()
+    .regex(/^\d+(\.\d+)?$/, "Peso inválido")
+    .optional()
+    .or(z.literal("")),
+  petFotoUrl: z.string().trim().max(500).optional().or(z.literal("")),
   petNotas: z.string().trim().max(500).optional(),
 });
