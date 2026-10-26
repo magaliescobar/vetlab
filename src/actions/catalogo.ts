@@ -208,7 +208,7 @@ export async function updateService(
   const activo = formData.get("activo") === "on";
 
   const _id = new ObjectId(id);
-  console.log("Updating service with ID:", _id);
+  //console.log("Updating service with ID:", _id);
   const existing = await getServiceById(_id);
   if (!existing) {
     return { ok: false, message: "El servicio no existe" };
