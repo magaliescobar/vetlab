@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useState } from "react";
+import { useMemo, useReducer, useState } from "react";
 import type { Owner } from "@/lib/models/owner";
 import type { Pet } from "@/lib/models/pet";
 import type { Service } from "@/lib/models/service";
@@ -8,6 +8,7 @@ import type { Vet } from "@/lib/models/vet";
 import type { Serialized } from "@/lib/models/serialized";
 import type { AppointmentView } from "@/lib/models/views";
 import type { EstadoCita } from "@/lib/models/shared";
+import { clinicHoursRange } from "@/lib/availability";
 import { AgendaFilters } from "../AgendaFilters/AgendaFilters";
 import { CalendarWidget } from "../CalendarWidget/CalendarWidget";
 import { SlotPicker } from "../SlotPicker/SlotPicker";
@@ -44,6 +45,10 @@ export function AgendaView({ vets, services, owners, pets }: Props) {
   );
   const [booking, setBooking] = useState<BookingTarget | null>(null);
 
+  // La grilla horaria del calendario cubre los horarios de todos los vets
+  // (SVAR recorta por defecto a 8–18 h y los turnos de la noche no se ven).
+  const { startHour, endHour } = useMemo(() => clinicHoursRange(vets), [vets]);
+
   return (
     <>
       <AgendaFilters
@@ -58,6 +63,8 @@ export function AgendaView({ vets, services, owners, pets }: Props) {
           <CalendarWidget
             vetId={vetId}
             estado={estado}
+            startHour={startHour}
+            endHour={endHour}
             refreshKey={refreshKey}
             onDateChange={setCalDateISO}
             onSelect={setSelected}

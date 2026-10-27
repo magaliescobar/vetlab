@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { Calendar, Willow } from "@svar-ui/react-calendar";
 import type {
@@ -43,15 +50,25 @@ async function fetchCitas(from: string, to: string): Promise<CitaView[]> {
 
 const words = { ...coreEs, ...calendarEs };
 
+/** Elemento del prop `views`: id de vista o { id, label?, sections? }. */
+type CalendarView = NonNullable<
+  ComponentProps<typeof Calendar>["views"]
+>[number];
+
 export function CalendarWidget({
   vetId,
   estado,
+  startHour,
+  endHour,
   refreshKey,
   onDateChange,
   onSelect,
 }: {
   vetId: string;
   estado: EstadoCita | "";
+  /** Rango horario de la grilla (default SVAR: 8–18 h, recorta turnos). */
+  startHour: number;
+  endHour: number;
   refreshKey: number;
   onDateChange: (dateISO: string) => void;
   onSelect: (cita: CitaView) => void;
@@ -86,6 +103,24 @@ export function CalendarWidget({
     onDateChangeRef.current(toLocalIso(initialDate).slice(0, 10));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Override de la sección "timeGrid" en day/week: el default SVAR dibuja solo
+  // 8–18 h; se amplía al rango real de atención de la clínica. "month" no tiene
+  // escala horaria, va como string.
+  const views = useMemo<CalendarView[]>(
+    () => [
+      {
+        id: "day",
+        sections: { timeGrid: { yScale: { startHour, endHour } } },
+      },
+      {
+        id: "week",
+        sections: { timeGrid: { yScale: { startHour, endHour } } },
+      },
+      "month",
+    ],
+    [startHour, endHour],
+  );
 
   const citasQuery = useFetch<CitaView[]>(
     `citas|${range.from}|${range.to}`,
@@ -142,7 +177,7 @@ export function CalendarWidget({
             events={events}
             date={initialDate}
             view="week"
-            views={["day", "week", "month"]}
+            views={views}
             readonly
             init={init}
             eventCss={eventCss}

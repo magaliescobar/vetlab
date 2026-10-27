@@ -39,6 +39,30 @@ export function dayBoundsUtc(dateISO: string, tz: string = CLINIC_TZ): Interval 
   return { start: localToUtc(dateISO, "00:00", tz), end: localToUtc(dateISO, "24:00", tz) };
 }
 
+/**
+ * Rango de horas [startHour, endHour) que cubre los horarios de todos los vets.
+ * Lo usa la grilla del calendario: sin vets devuelve el día completo.
+ */
+export function clinicHoursRange(
+  vets: { horarios: Horarios }[],
+): { startHour: number; endHour: number } {
+  let start = 24;
+  let end = 0;
+  for (const v of vets) {
+    for (const franjas of Object.values(v.horarios)) {
+      for (const f of franjas ?? []) {
+        const [hd] = f.desde.split(":").map(Number);
+        const [hh, mh] = f.hasta.split(":").map(Number);
+        start = Math.min(start, hd);
+        end = Math.max(end, mh ? hh + 1 : hh);
+      }
+    }
+  }
+  return start < end
+    ? { startHour: start, endHour: Math.min(end, 24) }
+    : { startHour: 0, endHour: 24 };
+}
+
 /** Franjas de atención del vet para esa fecha local, ya en UTC. */
 export function workingIntervals(horarios: Horarios, dateISO: string, tz: string = CLINIC_TZ): Interval[] {
   const [y, m, d] = dateISO.split("-").map(Number);
