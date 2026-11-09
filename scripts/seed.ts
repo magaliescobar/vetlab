@@ -168,6 +168,18 @@ async function main() {
   await client.connect();
   const db = client.db("vetlab");
 
+  // --if-empty (CI/Vercel): solo seedea si la base está vacía; nunca pisa datos.
+  if (process.argv.includes("--if-empty")) {
+    const counts = await Promise.all(
+      ["owners", "services", "users"].map((n) => db.collection(n).estimatedDocumentCount()),
+    );
+    if (counts.some((c) => c > 0)) {
+      console.log("--if-empty: la base ya tiene datos; se omite el seed.");
+      await client.close();
+      return;
+    }
+  }
+
   // Idempotente: vaciar las colecciones antes de insertar.
   for (const name of ["owners", "pets", "vets", "services", "appointments", "users"]) {
     await db.collection(name).deleteMany({});

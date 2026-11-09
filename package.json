@@ -10,6 +10,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
+    "seed:ci": "tsx scripts/seed.ts --if-empty",
     "postseed": "tsx --env-file=.env.local scripts/revalidate.ts"
   },
   "dependencies": {
